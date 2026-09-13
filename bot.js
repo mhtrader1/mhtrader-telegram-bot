@@ -1,12 +1,12 @@
 // bot.js
-const TelegramBot = require("node-telegram-bot-api").default;
-const axios = require("axios");
-const cheerio = require("cheerio");
-const express = require("express");
+import TelegramBot from "node-telegram-bot-api";
+import axios from "axios";
+import cheerio from "cheerio";
+import express from "express";
 
 const app = express();
 
-const TOKEN = process.env.BOT_TOKEN; // 🔒 مهم
+const TOKEN = process.env.BOT_TOKEN;
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 let CHAT_ID = null;
@@ -37,7 +37,7 @@ async function checkPrice() {
 
   priceAlerts.forEach(level => {
     if (price >= level && !triggered[level]) {
-      bot.sendMessage(CHAT_ID, `🚨 رسید به ${level} | ${price}`);
+      bot.sendMessage(CHAT_ID, `🚨 ${price} رسید به ${level}`);
       triggered[level] = true;
     }
     if (price < level) triggered[level] = false;
@@ -45,7 +45,7 @@ async function checkPrice() {
 }
 
 // =====================
-// خبر ForexFactory
+// Forex Factory
 // =====================
 async function getForexNews() {
   try {
@@ -73,8 +73,6 @@ async function getForexNews() {
 let lastNewsSent = "";
 
 // =====================
-// چک خبر
-// =====================
 async function checkNews() {
   if (!CHAT_ID) return;
 
@@ -93,7 +91,7 @@ async function checkNews() {
 }
 
 // =====================
-// دستورات
+// commands
 // =====================
 bot.onText(/\/start/, msg => {
   CHAT_ID = msg.chat.id;
@@ -104,7 +102,7 @@ bot.onText(/\/add (.+)/, (msg, match) => {
   const price = parseFloat(match[1]);
   if (!isNaN(price)) {
     priceAlerts.push(price);
-    bot.sendMessage(msg.chat.id, `✅ اضافه شد ${price}`);
+    bot.sendMessage(msg.chat.id, `✅ ${price} اضافه شد`);
   }
 });
 
@@ -113,13 +111,9 @@ bot.onText(/\/list/, msg => {
 });
 
 // =====================
-// loops
-// =====================
 setInterval(checkPrice, CHECK_INTERVAL);
 setInterval(checkNews, 60000);
 
-// =====================
-// keep alive (Render)
 // =====================
 app.get("/", (req, res) => res.send("alive"));
 app.listen(3000);
