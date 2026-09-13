@@ -2,7 +2,6 @@
   "name": "mhtrader",
   "version": "1.0.0",
   "main": "bot.js",
-  "type": "module",
   "engines": {
     "node": "18.x"
   },
