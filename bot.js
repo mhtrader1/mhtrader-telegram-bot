@@ -1,31 +1,29 @@
 // bot.js
-const TelegramBot = require("node-telegram-bot-api");
+const TelegramBot = require("node-telegram-bot-api").default;
 const axios = require("axios");
 const cheerio = require("cheerio");
 const express = require("express");
+
 const app = express();
 
-const TOKEN = "8073311085:AAGjCPmGVXSTWdnGXoWrgzIloV5jMhTZ7j4";
+const TOKEN = process.env.BOT_TOKEN; // 🔒 مهم
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 let CHAT_ID = null;
 
-// =====================
-// تنظیمات
-// =====================
-let priceAlerts = [2350, 2365, 2330]; // محدوده‌ها
+let priceAlerts = [2350, 2365, 2330];
 let triggered = {};
 
-const CHECK_INTERVAL = 10000; // 10s
+const CHECK_INTERVAL = 10000;
 
 // =====================
-// گرفتن قیمت طلا
+// قیمت طلا
 // =====================
 async function getGoldPrice() {
   try {
     const res = await axios.get("https://api.metals.live/v1/spot");
     return res.data[0].gold;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -39,17 +37,15 @@ async function checkPrice() {
 
   priceAlerts.forEach(level => {
     if (price >= level && !triggered[level]) {
-      bot.sendMessage(CHAT_ID, `🚨 رسید به سطح ${level} | قیمت: ${price}`);
+      bot.sendMessage(CHAT_ID, `🚨 رسید به ${level} | ${price}`);
       triggered[level] = true;
     }
-    if (price < level) {
-      triggered[level] = false;
-    }
+    if (price < level) triggered[level] = false;
   });
 }
 
 // =====================
-// گرفتن خبرهای ForexFactory
+// خبر ForexFactory
 // =====================
 async function getForexNews() {
   try {
@@ -69,16 +65,16 @@ async function getForexNews() {
     });
 
     return news;
-  } catch (e) {
+  } catch {
     return [];
   }
 }
 
+let lastNewsSent = "";
+
 // =====================
 // چک خبر
 // =====================
-let lastNewsSent = "";
-
 async function checkNews() {
   if (!CHAT_ID) return;
 
@@ -97,30 +93,33 @@ async function checkNews() {
 }
 
 // =====================
-// دستورات تلگرام
+// دستورات
 // =====================
 bot.onText(/\/start/, msg => {
   CHAT_ID = msg.chat.id;
-  bot.sendMessage(CHAT_ID, "ربات فعال شد ✅");
+  bot.sendMessage(CHAT_ID, "✅ فعال شد");
 });
 
 bot.onText(/\/add (.+)/, (msg, match) => {
   const price = parseFloat(match[1]);
   if (!isNaN(price)) {
     priceAlerts.push(price);
-    bot.sendMessage(msg.chat.id, `✅ اضافه شد: ${price}`);
+    bot.sendMessage(msg.chat.id, `✅ اضافه شد ${price}`);
   }
 });
 
 bot.onText(/\/list/, msg => {
-  bot.sendMessage(msg.chat.id, `📊 سطوح:\n${priceAlerts.join("\n")}`);
+  bot.sendMessage(msg.chat.id, priceAlerts.join("\n"));
 });
 
 // =====================
-// لوپ‌ها
+// loops
 // =====================
 setInterval(checkPrice, CHECK_INTERVAL);
-setInterval(checkNews, 60000); // هر 1 دقیقه
+setInterval(checkNews, 60000);
 
-app.get("/", (req, res) => res.send("Bot is alive"));
+// =====================
+// keep alive (Render)
+// =====================
+app.get("/", (req, res) => res.send("alive"));
 app.listen(3000);
